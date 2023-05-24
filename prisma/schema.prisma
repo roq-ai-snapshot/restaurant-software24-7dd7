@@ -1,0 +1,137 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model dishes {
+  id           String        @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  menu_id      String?       @db.Uuid
+  name         String        @db.VarChar(255)
+  description  String?
+  price        Int
+  availability Boolean
+  menus        menus?        @relation(fields: [menu_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  order_items  order_items[]
+}
+
+model feedbacks {
+  id            String       @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  customer_id   String?      @db.Uuid
+  restaurant_id String?      @db.Uuid
+  rating        Int
+  comment       String?
+  created_at    DateTime     @db.Timestamp(6)
+  users         users?       @relation(fields: [customer_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  restaurants   restaurants? @relation(fields: [restaurant_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model inventory {
+  id            String       @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  restaurant_id String?      @db.Uuid
+  item_name     String       @db.VarChar(255)
+  quantity      Int
+  unit          String       @db.VarChar(255)
+  restaurants   restaurants? @relation(fields: [restaurant_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model menus {
+  id            String       @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  restaurant_id String?      @db.Uuid
+  name          String       @db.VarChar(255)
+  dishes        dishes[]
+  restaurants   restaurants? @relation(fields: [restaurant_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model order_items {
+  id       String  @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  order_id String? @db.Uuid
+  dish_id  String? @db.Uuid
+  quantity Int
+  price    Int
+  dishes   dishes? @relation(fields: [dish_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  orders   orders? @relation(fields: [order_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model orders {
+  id                              String        @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  customer_id                     String?       @db.Uuid
+  restaurant_id                   String?       @db.Uuid
+  waiter_id                       String?       @db.Uuid
+  status                          String        @db.VarChar(255)
+  total_price                     Int
+  created_at                      DateTime      @db.Timestamp(6)
+  updated_at                      DateTime      @db.Timestamp(6)
+  order_items                     order_items[]
+  users_orders_customer_idTousers users?        @relation("orders_customer_idTousers", fields: [customer_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  restaurants                     restaurants?  @relation(fields: [restaurant_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users_orders_waiter_idTousers   users?        @relation("orders_waiter_idTousers", fields: [waiter_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model promotions {
+  id            String       @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  restaurant_id String?      @db.Uuid
+  name          String       @db.VarChar(255)
+  description   String?
+  start_date    DateTime     @db.Timestamp(6)
+  end_date      DateTime     @db.Timestamp(6)
+  restaurants   restaurants? @relation(fields: [restaurant_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model reservations {
+  id                                    String       @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  customer_id                           String?      @db.Uuid
+  restaurant_id                         String?      @db.Uuid
+  waiter_id                             String?      @db.Uuid
+  table_number                          Int
+  reservation_date                      DateTime     @db.Timestamp(6)
+  reservation_time                      String       @db.VarChar(255)
+  status                                String       @db.VarChar(255)
+  users_reservations_customer_idTousers users?       @relation("reservations_customer_idTousers", fields: [customer_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  restaurants                           restaurants? @relation(fields: [restaurant_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users_reservations_waiter_idTousers   users?       @relation("reservations_waiter_idTousers", fields: [waiter_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model restaurants {
+  id                  String         @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  owner_id            String?        @db.Uuid
+  name                String         @db.VarChar(255)
+  location            String         @db.VarChar(255)
+  contact_information String         @db.VarChar(255)
+  operating_hours     String         @db.VarChar(255)
+  feedbacks           feedbacks[]
+  inventory           inventory[]
+  menus               menus[]
+  orders              orders[]
+  promotions          promotions[]
+  reservations        reservations[]
+  users               users?         @relation(fields: [owner_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  staff               staff[]
+}
+
+model staff {
+  id            String       @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  user_id       String?      @db.Uuid
+  restaurant_id String?      @db.Uuid
+  role          String       @db.VarChar(255)
+  restaurants   restaurants? @relation(fields: [restaurant_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users         users?       @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model users {
+  id                                           String         @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  role                                         String         @db.VarChar(255)
+  name                                         String         @db.VarChar(255)
+  email                                        String         @unique @db.VarChar(255)
+  password                                     String         @db.VarChar(255)
+  feedbacks                                    feedbacks[]
+  orders_orders_customer_idTousers             orders[]       @relation("orders_customer_idTousers")
+  orders_orders_waiter_idTousers               orders[]       @relation("orders_waiter_idTousers")
+  reservations_reservations_customer_idTousers reservations[] @relation("reservations_customer_idTousers")
+  reservations_reservations_waiter_idTousers   reservations[] @relation("reservations_waiter_idTousers")
+  restaurants                                  restaurants[]
+  staff                                        staff[]
+}
